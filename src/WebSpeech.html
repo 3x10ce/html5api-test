@@ -8,12 +8,12 @@
   <h1>
     Web Speech Test
   </h1>
-  <input type="text" name="audio-input" value="こんにちは、世界。">
-        <label>Type:<select name="volume"></select></label>
-        <label>Volume:<input type="range" value="50" min="0" max="100" name="volume"></label>
-        <label>Pitch:<input type="range" value="50" min="0" max="100" name="volume"></label>
-        <label>Rate:<input type="range" value="50" min="0" max="100" name="volume"></label>
-        <label>Volume:<input type="range" value="50" min="0" max="100" name="volume"></label>
+  <input type="text" name="manuscript" value="こんにちは、世界。">
+  <p><label>Actor:<select name="actor"></select></label></p>
+  <p><label>Volume:<input type="range" value="100" min="0" max="100" name="volume"></label></p>
+  <p><label>Pitch:<input type="range" value="100" min="50" max="200" name="pitch"></label></p>
+  <p><label>Rate:<input type="range" value="100" min="0" max="200" name="rate"></label></p>
+  <p><input type="button" id="speech" value="Speech!"></p>
   <div id="output">
   </div>
 <script type="text/javascript">
@@ -21,15 +21,49 @@
 (function(){
 
   // SpeechSynthesis
-  var synth = new SpeechSynthesis();
+  var synth = new SpeechSynthesisUtterance();
 
   // Voice Acters
-  var voices = speechSynthesis.getVoices();
-  voices.forEach(function(v){
-    var opt = document.createElement("option");
-    opt.value = v.voiceURI;
-    opt.textContet = v.name;
-    if(v.lang.length) opt.textContent += " [" + v.lang + "]";
+  speechSynthesis.onvoiceschanged = function(){
+
+    var voices = speechSynthesis.getVoices();
+    voices.forEach(function(v){
+      var opt = document.createElement("option");
+      opt.value = v.voiceURI;
+      if( v.lang.length != 0) opt.textContent = v.name + " [" + v.lang + "]";
+      else opt.textContent = v.name;
+      document.querySelector("select[name=actor]").appendChild(opt);
+    });
+  };
+
+  // control listener
+  var controlChanged = function(evt){
+
+    switch(evt.target.name){
+      case "volume": synth.volume   = parseFloat(evt.target.value) / 100.0; break;
+      case "pitch" : synth.pitch    = parseFloat(evt.target.value) / 100.0; break;
+      case "rate"  : synth.rate     = parseFloat(evt.target.value) / 100.0; break;
+      case "actor" : synth.voiceURI = evt.target.value; break;
+    };
+  };
+
+  // enable/disable all controller
+  var enableCtrler = function(){
+    document.querySelectorAll("input,select").forEach( v => { v.disabled = false } );
+  }
+  var disableCtrler = function(){
+    document.querySelectorAll("input,select").forEach( v => { v.disabled = true } );
+  }
+
+  document.querySelectorAll("input[type=range],select").forEach(function(v){
+      v.addEventListener("change",controlChanged);
+  });
+
+  document.querySelector("input#speech").addEventListener("click",function(){
+    synth.text = document.querySelector("input[name=manuscript]").value;
+    synth.onend = function(e) { enableCtrler(); };
+    disableCtrler();
+    speechSynthesis.speak(synth);
   });
 })();
 
