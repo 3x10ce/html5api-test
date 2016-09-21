@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Web Audio Test</title>
+</head>
+<body>
+  <h1>
+    Web Audio Test
+  </h1>
+  <input type="file" accept="audio/*" name="audio-input">
+  <input type="button" value="PLAY" name="audio-play">
+  <input type="button" value="STOP" name="audio-stop">
+  <table>
+    <tbody>
+      <tr>
+        <th>Volume</th>
+        <td><input type="range" value="50" min="0" max="100" name="volume"></td>
+      </tr>
+      <!--
+      <tr>
+        <th>Test</th>
+        <td><input type="range" value="50" min="0" max="100" name="test"></td>
+      </tr>
+      -->
+    </tbody>
+  </table>
+  <div id="output">
+  </div>
+<script type="text/javascript">
+
+
+try {
+  var sound_data;
+  // Fix up for prefixing
+  window.AudioContext = window.AudioContext||window.webkitAudioContext;
+
+  var context = new AudioContext();
+  var gain;
+  var source;
+  var crossfade = false;
+
+  function playSound(buf){
+    if( crossfade ) return;
+
+    if( source === undefined ) {
+      source = context.createBufferSource();
+      gain = context.createGain();
+      source.buffer = buf;
+      source.connect(gain);
+      gain.connect(context.destination);
+      setVolume();
+      source.loop = true;
+      source.start(0);
+
+    }else {
+      var new_source = context.createBufferSource();
+      var new_gain = context.createGain();
+      new_source.buffer = buf;
+      new_gain.gain.value = 0.0;
+      new_source.connect(new_gain);
+      new_gain.connect(context.destination);
+
+      source.loop = true;
+      new_source.start(0);
+
+      var t = 0;
+      var t_slice = 50;
+      var t_round = 100;
+      crossfade = true;
+
+      var interval = window.setInterval(function(){
+        t += 1;
+        var volmElm = document.querySelector("input[name=volume]");
+        var volm = Math.pow(volmElm.value / volmElm.max, 2);
+        var olderVol = volm * ( 1 - Math.pow(t / t_round, 2) );
+        var newerVol = volm * ( 1 - Math.pow(t / t_round - 1 , 2) );
+        gain.gain.value = olderVol;
+        new_gain.gain.value = newerVol;
+
+
+        if( t >= t_round ){
+          window.clearInterval(interval);
+          source.stop();
+
+          gain = new_gain;
+          source = new_source;
+          crossfade = false;
+        }
+      }, t_slice);
+
+
+    }
+  }
+
+  document.querySelector("input[name=audio-input]").addEventListener("change",function(evt){
+    document.querySelector("#output").textContent = "Loading...";
+    document.querySelector("input[type=button]").disabled = true;
+
+    var file = evt.target.files;
+
+    //FileReaderの作成
+    var reader = new FileReader();
+
+    // 読み込み
+    reader.readAsArrayBuffer(file[0]);
+    reader.onprogress = function(ev){
+      var percentLoaded = Math.round((ev.loaded / ev.total) * 100);
+      document.querySelector("#output").textContent = "Loading..." + percentLoaded + " %";
+    }
+    reader.onload = function(ev){
+      context.decodeAudioData(reader.result, function(buffer){
+        sound_data = buffer;
+        document.querySelector("#output").textContent = "Done!";
+        document.querySelector("input[type=button]").disabled = false;
+      },function(){});
+    }
+  });
+
+  document.querySelector("input[name=audio-play]").addEventListener("click",function(evt){
+    playSound(sound_data);
+  });
+
+  document.querySelector("input[name=audio-stop]").addEventListener("click",function(evt){
+    source.stop();
+    gain.disconnect();
+    source.disconnect();
+    source = gain = undefined;
+  });
+
+  var setVolume = function(){
+    if( crossfade ) return;
+    var volmElm = document.querySelector("input[name=volume]");
+    var volm = Math.pow(volmElm.value / volmElm.max, 2);
+    gain.gain.value = volm;
+
+  }
+
+  document.querySelector("input[name=volume]").addEventListener("change",setVolume);
+}
+catch(e) {
+  alert('Web Audio API is not supported in this browser');
+}
+
+
+</script>
+</body>
+</html>

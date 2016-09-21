@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Web Audio Test</title>
+</head>
+<body>
+  <h1>
+    Web Speech Test
+  </h1>
+  <input type="text" name="audio-input" value="こんにちは、世界。">
+        <label>Type:<select name="volume"></select></label>
+        <label>Volume:<input type="range" value="50" min="0" max="100" name="volume"></label>
+        <label>Pitch:<input type="range" value="50" min="0" max="100" name="volume"></label>
+        <label>Rate:<input type="range" value="50" min="0" max="100" name="volume"></label>
+        <label>Volume:<input type="range" value="50" min="0" max="100" name="volume"></label>
+  <div id="output">
+  </div>
+<script type="text/javascript">
+
+(function(){
+
+  // SpeechSynthesis
+  var synth = new SpeechSynthesis();
+
+  // Voice Acters
+  var voices = speechSynthesis.getVoices();
+  voices.forEach(function(v){
+    var opt = document.createElement("option");
+    opt.value = v.voiceURI;
+    opt.textContet = v.name;
+    if(v.lang.length) opt.textContent += " [" + v.lang + "]";
+  });
+})();
+
+</script>
+</body>
+</html>
